@@ -35,12 +35,6 @@ If you use this work in an academic context, please cite the paper:
 
 This package has been tested with **python3** in **ROS2 Humble**/**Ubuntu 22.04** (*recommended*) and **ROS2 Foxy**/**Ubuntu 20.04**.
 
-> [!IMPORTANT]
-> Remember to update the firmware of the drone and the SkyController.
-
-> [!TIP]
-> To update the firmware, use FreeFlight 6 app for [Android](https://www.parrot.com/en/support/anafi/how-do-i-get-the-android-freeflight-6-app) or [iOS](https://www.parrot.com/en/support/anafi/how-do-i-get-the-ios-freeflight-6-app).
-
 ### Dependencies
 
 - [Parrot Olympe](https://developer.parrot.com/docs/olympe/installation.html) **7.5.0** - SDK for Parrot drones:
@@ -113,6 +107,12 @@ Install `setuptools` version `58.2.0`:
 </details>
 
 ## Usage
+
+> [!IMPORTANT]
+> Remember to update the firmware of the drone and the SkyController.
+
+> [!TIP]
+> To update the firmware, use FreeFlight 6 app for [Android](https://www.parrot.com/en/support/anafi/how-do-i-get-the-android-freeflight-6-app) or [iOS](https://www.parrot.com/en/support/anafi/how-do-i-get-the-ios-freeflight-6-app).
 
 To connect to the drone, run in the terminal:
 
