@@ -897,7 +897,7 @@ class Anafi(Node):
 					olympe.VDEF_NV12: cv2.COLOR_YUV2BGR_NV12,
 				}[yuv_frame.format()]
 				cv2frame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)  # use OpenCV to convert the yuv frame to RGB
-				if self.model in {'thermal', 'usa'} and self.thermal_rendering in {1, 2}:
+				if self.model in {'thermal', 'usa'} and self.thermal_rendering == 1:
 					cv2frame = cv2.applyColorMap(cv2frame, cv2.COLORMAP_PLASMA)  # to mimic FLIR ironbow colormap
 				# if self.model in {'ai'} and self.disparity_map:
 				# 	mask = cv2.inRange(cv2frame, np.array([0,0,0]), np.array([254,254,254]))
