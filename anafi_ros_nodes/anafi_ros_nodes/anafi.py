@@ -356,7 +356,7 @@ class Anafi(Node):
 		flights_status = self.drone.get_state(olympe.messages.ardrone3.SettingsState.MotorFlightsStatusChanged)  # https://developer.parrot.com/docs/olympe/arsdkng_ardrone3_settings_state.html#olympe.messages.ardrone3.SettingsState.MotorErrorStateChanged
 		self.node.get_logger().info('Number of flights: %i' % (flights_status['nbFlights']))
 		self.node.get_logger().info('Total flight duration: %s' % (str(datetime.timedelta(seconds=flights_status['totalFlightDuration']))))
-		if not self.simulation_environment:
+		if not self.simulation_environment and self.model != 'ai':
 			self.node.get_logger().debug('Battery serial: %s' % (self.drone.get_state(olympe.messages.battery.serial)['serial']))  # https://developer.parrot.com/docs/olympe/arsdkng_battery.html#olympe.messages.battery.serial
 		self.node.get_logger().info('Battery cycle count: %i' % (self.drone.get_state(olympe.messages.battery.cycle_count)['count']))  # https://developer.parrot.com/docs/olympe/arsdkng_battery.html#olympe.messages.battery.cycle_count
 		self.node.get_logger().info('Battery health: %i%%' % (self.drone.get_state(olympe.messages.battery.health)['state_of_health']))  # https://developer.parrot.com/docs/olympe/arsdkng_battery.html#olympe.messages.battery.health
