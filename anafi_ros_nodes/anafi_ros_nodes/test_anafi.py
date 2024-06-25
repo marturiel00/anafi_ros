@@ -10,7 +10,7 @@ import time
 import datetime
 import sys
 
-from termcolor import colored
+from termcolor import colored  # pip install termcolor
 from timeit import default_timer as timer
 from rclpy.node import Node
 from rclpy.parameter import Parameter
