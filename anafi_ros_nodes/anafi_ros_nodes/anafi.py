@@ -564,15 +564,7 @@ class Anafi(Node):
 				camera_operated = parameter.value
 				self.drone(set_style(style=style(int(camera_operated))))  # https://developer.parrot.com/docs/olympe/arsdkng_piloting_style.html#olympe.messages.piloting_style.set_style
 				self.node.get_logger().debug("Parameter 'drone/camera_operated' set to %r" % camera_operated)
-			if parameter.name == 'drone/offboard':
-				offboard = parameter.value
-				if offboard:
-					self.switch_offboard()
-				else:
-					self.switch_manual()
-					if not self.skycontroller_enabled:
-						return SetParametersResult(successful=False, reason="Cannot swith to manual control without Skycontroller!")
-				
+
 			# RTH related
 			if parameter.name == 'home/type':
 				home_type = parameter.value
