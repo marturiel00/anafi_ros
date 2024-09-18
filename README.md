@@ -33,7 +33,7 @@ If you use this work in an academic context, please cite the paper:
 
 ## Installation
 
-This package has been tested with **python3** in **ROS2 Humble**/**Ubuntu 22.04** (*recommended*) and **ROS2 Foxy**/**Ubuntu 20.04**.
+This package has been tested with **python3** in **ROS2 Humble**/**Ubuntu 22.04** (*recommended*), **ROS2 Jazzy**/**Ubuntu 24.04** and **ROS2 Foxy**/**Ubuntu 20.04**.
 
 ### Dependencies
 
@@ -86,6 +86,11 @@ This package has been tested with **python3** in **ROS2 Humble**/**Ubuntu 22.04*
 
       pip install scipy
 
+> [!NOTE]  
+> To install Python packages using `pip` in Ubuntu 24.04, you can add `--break-system-packages` flag:
+> 
+>     pip install --user <package_name> --break-system-packages
+
 ### Build
 
 To build from source, clone the latest version from this repository into your ROS2 workspace and build the package using:
@@ -113,7 +118,9 @@ Install `setuptools` version `58.2.0`:
 > Remember to update the firmware of the drone and the SkyController.
 
 > [!TIP]
-> To update the firmware, use FreeFlight 6 app for [Android](https://www.parrot.com/en/support/anafi/how-do-i-get-the-android-freeflight-6-app) or [iOS](https://www.parrot.com/en/support/anafi/how-do-i-get-the-ios-freeflight-6-app).
+> - To update the firmware of ANAFI **4K** and **Thermal**, use **FreeFlight 6** app for [Android](https://www.parrot.com/en/support/anafi/how-do-i-get-the-android-freeflight-6-app) or [iOS](https://www.parrot.com/en/support/anafi/how-do-i-get-the-ios-freeflight-6-app).
+> - To update the firmware of ANAFI **USA**, use **FreeFlight 6 USA** app for [Android](https://www.parrot.com/en/support/anafi-usa/how-do-i-get-android-freeflight-6-usa-app) or [iOS](https://www.parrot.com/en/support/anafi-usa/how-do-i-get-the-ios-freeflight-6-usa-app).
+> - To update the firmware of ANAFI **Ai**, use **FreeFlight 7** app for [iOS](https://www.parrot.com/en/support/anafi-ai/how-do-i-get-the-ios-freeflight-7-app).
 
 To connect to the drone, run in the terminal:
 
