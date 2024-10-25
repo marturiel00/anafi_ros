@@ -25,7 +25,7 @@ import anafi_ros_nodes
 from timeit import default_timer as timer
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from rclpy.qos import qos_profile_system_default, qos_profile_sensor_data, qos_profile_services_default, qos_profile_parameters, qos_profile_parameter_events
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy, qos_profile_system_default, qos_profile_sensor_data, qos_profile_services_default, qos_profile_parameters, qos_profile_parameter_events, qos_profile_action_status_default
 from rcl_interfaces.msg import ParameterDescriptor, FloatingPointRange, IntegerRange, SetParametersResult
 from ament_index_python.packages import get_package_share_directory
 from std_msgs.msg import UInt8, UInt16, Int8, Float32, String, Header, Bool
@@ -80,40 +80,48 @@ class Anafi(Node):
 		self.node = rclpy.create_node('anafi')
 
 		self.node.get_logger().info("Anafi is running...")
+		
+		# Configure QoS profile for publishing and subscribing
+		qos_profile = QoSProfile(  # https://docs.ros.org/en/rolling/Concepts/Intermediate/About-Quality-of-Service-Settings.html#qos-policies
+			reliability=ReliabilityPolicy.RELIABLE,
+			durability=DurabilityPolicy.VOLATILE,
+			history=HistoryPolicy.KEEP_LAST,
+			depth=1
+		)
 
 		# Subscribers
-		self.node.create_subscription(CameraCommand, 'camera/command', self.zoom_callback, qos_profile_system_default)
-		self.node.create_subscription(PilotingCommand, 'drone/command', self.rpyt_callback, qos_profile_system_default)
-		self.node.create_subscription(MoveToCommand, 'drone/moveto', self.moveTo_callback, qos_profile_system_default)
-		self.node.create_subscription(MoveByCommand, 'drone/moveby', self.moveBy_callback, qos_profile_system_default)
-		self.node.create_subscription(GimbalCommand, 'gimbal/command', self.gimbal_callback, qos_profile_system_default)
+		self.node.create_subscription(CameraCommand, 'camera/command', self.zoom_callback, qos_profile_services_default)
+		self.node.create_subscription(PilotingCommand, 'drone/command', self.rpyt_callback, qos_profile_services_default)
+		self.node.create_subscription(MoveToCommand, 'drone/moveto', self.moveTo_callback, qos_profile_services_default)
+		self.node.create_subscription(MoveByCommand, 'drone/moveby', self.moveBy_callback, qos_profile_services_default)
+		self.node.create_subscription(GimbalCommand, 'gimbal/command', self.gimbal_callback, qos_profile_services_default)
 
 		# Publishers
-		self.pub_image = self.node.create_publisher(Image, 'camera/image', qos_profile_sensor_data)
-		self.pub_camera_info = self.node.create_publisher(CameraInfo, 'camera/camera_info', qos_profile_system_default)
-		self.pub_time = self.node.create_publisher(Time, 'time', qos_profile_system_default)
+		self.pub_image = self.node.create_publisher(Image, 'camera/image', qos_profile)
+		self.pub_camera_info = self.node.create_publisher(CameraInfo, 'camera/camera_info', qos_profile)
+		self.pub_time = self.node.create_publisher(Time, 'time', qos_profile)
 		self.pub_attitude = self.node.create_publisher(QuaternionStamped, 'drone/attitude', qos_profile_sensor_data)
 		self.pub_altitude = self.node.create_publisher(Float32, 'drone/altitude', qos_profile_sensor_data)
-		self.pub_position = self.node.create_publisher(PointStamped, 'drone/position', qos_profile_system_default)
-		self.pub_local_position = self.node.create_publisher(PointStamped, 'drone/position_local', qos_profile_system_default)
+		self.pub_position = self.node.create_publisher(PointStamped, 'drone/position', qos_profile)
+		self.pub_local_position = self.node.create_publisher(PointStamped, 'drone/position_local', qos_profile)
 		self.pub_speed = self.node.create_publisher(Vector3Stamped, 'drone/speed', qos_profile_sensor_data)
-		self.pub_link_goodput = self.node.create_publisher(UInt16, 'link/goodput', qos_profile_system_default)
-		self.pub_link_quality = self.node.create_publisher(UInt8, 'link/quality', qos_profile_system_default)
-		self.pub_wifi_rssi = self.node.create_publisher(Int8, 'link/rssi', qos_profile_system_default)
-		self.pub_battery_percentage = self.node.create_publisher(UInt8, 'battery/percentage', qos_profile_system_default)
-		self.pub_state = self.node.create_publisher(String, 'drone/state', qos_profile_system_default)
+		self.pub_link_goodput = self.node.create_publisher(UInt16, 'link/goodput', qos_profile)
+		self.pub_link_quality = self.node.create_publisher(UInt8, 'link/quality', qos_profile)
+		self.pub_wifi_rssi = self.node.create_publisher(Int8, 'link/rssi', qos_profile)
+		self.pub_battery_percentage = self.node.create_publisher(UInt8, 'battery/percentage', qos_profile)
+		self.pub_state = self.node.create_publisher(String, 'drone/state', qos_profile)
 		self.pub_rpy = self.node.create_publisher(Vector3Stamped, 'drone/rpy', qos_profile_sensor_data)
 		self.pub_gimbal_attitude = self.node.create_publisher(QuaternionStamped, 'gimbal/attitude', qos_profile_sensor_data)
 		self.pub_gimbal_rpy = self.node.create_publisher(Vector3Stamped, 'gimbal/rpy', qos_profile_sensor_data)
-		self.pub_exposure_time = self.node.create_publisher(Float32, 'camera/exposure_time', qos_profile_system_default)
-		self.pub_iso_gain = self.node.create_publisher(UInt16, 'camera/iso_gain', qos_profile_system_default)
-		self.pub_awb_r_gain = self.node.create_publisher(Float32, 'camera/awb_r_gain', qos_profile_system_default)
-		self.pub_awb_b_gain = self.node.create_publisher(Float32, 'camera/awb_b_gain', qos_profile_system_default)
-		self.pub_hfov = self.node.create_publisher(Float32, 'camera/hfov', qos_profile_system_default)
-		self.pub_vfov = self.node.create_publisher(Float32, 'camera/vfov', qos_profile_system_default)
-		self.pub_gps_fix = self.node.create_publisher(Bool, 'drone/gps/fix', qos_profile_system_default)
+		self.pub_exposure_time = self.node.create_publisher(Float32, 'camera/exposure_time', qos_profile)
+		self.pub_iso_gain = self.node.create_publisher(UInt16, 'camera/iso_gain', qos_profile)
+		self.pub_awb_r_gain = self.node.create_publisher(Float32, 'camera/awb_r_gain', qos_profile)
+		self.pub_awb_b_gain = self.node.create_publisher(Float32, 'camera/awb_b_gain', qos_profile)
+		self.pub_hfov = self.node.create_publisher(Float32, 'camera/hfov', qos_profile)
+		self.pub_vfov = self.node.create_publisher(Float32, 'camera/vfov', qos_profile)
+		self.pub_gps_fix = self.node.create_publisher(Bool, 'drone/gps/fix', qos_profile)
 		self.pub_steady = self.node.create_publisher(Bool, 'drone/steady', qos_profile_sensor_data)
-		self.pub_battery_health = self.node.create_publisher(UInt8, 'battery/health', qos_profile_system_default)
+		self.pub_battery_health = self.node.create_publisher(UInt8, 'battery/health', qos_profile)
 
 		# Services
 		self.node.create_service(SetBool, 'drone/arm', self.arm_callback)
@@ -301,7 +309,15 @@ class Anafi(Node):
 																								 to_value=180.0,
 																								 step=0.0)]))
 		if self.model in {'thermal', 'usa'}:
-			self.node.declare_parameter("camera/thermal/rendering", 0,  # 0
+			if self.model=='thermal':
+				self.node.declare_parameter("camera/thermal/rendering", 2,  # 0
+										ParameterDescriptor(
+											description="Thermal image rendering mode: 0 = visible; 1 = thermal; 2: blended",
+											integer_range=[IntegerRange(from_value=0,
+																		to_value=2,
+																		step=1)]))
+			if self.model=='usa':
+				self.node.declare_parameter("camera/thermal/rendering", 0,  # 0
 										ParameterDescriptor(
 											description="Thermal image rendering mode: 0 = visible; 1 = thermal; 2: blended",
 											integer_range=[IntegerRange(from_value=0,
@@ -564,7 +580,7 @@ class Anafi(Node):
 				camera_operated = parameter.value
 				self.drone(set_style(style=style(int(camera_operated))))  # https://developer.parrot.com/docs/olympe/arsdkng_piloting_style.html#olympe.messages.piloting_style.set_style
 				self.node.get_logger().debug("Parameter 'drone/camera_operated' set to %r" % camera_operated)
-
+				
 			# RTH related
 			if parameter.name == 'home/type':
 				home_type = parameter.value
@@ -889,7 +905,7 @@ class Anafi(Node):
 					olympe.VDEF_NV12: cv2.COLOR_YUV2BGR_NV12,
 				}[yuv_frame.format()]
 				cv2frame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)  # use OpenCV to convert the yuv frame to RGB
-				if self.model in {'thermal', 'usa'} and self.thermal_rendering == 1:
+				if self.model in {'thermal', 'usa'} and (self.thermal_rendering == 1):
 					cv2frame = cv2.applyColorMap(cv2frame, cv2.COLORMAP_PLASMA)  # to mimic FLIR ironbow colormap
 				# if self.model in {'ai'} and self.disparity_map:
 				# 	mask = cv2.inRange(cv2frame, np.array([0,0,0]), np.array([254,254,254]))
@@ -1319,7 +1335,7 @@ class Anafi(Node):
 				self.node.get_logger().error("Cannot swith to manual control without Skycontroller!")
 			
 	def switch_offboard(self):
-		if not self.offboard: 
+		if not self.offboard:
 			if self.skycontroller_enabled:
 				# button: 0 = return home, 1 = takeoff/land, 2 = back left, 3 = back right
 				# axis:   0 = yaw, 1 = throttle, 2 = roll, 3 = pitch, 4 = camera, 5 = zoom
