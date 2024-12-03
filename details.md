@@ -4,11 +4,11 @@
 
 | Topic Name 		| Message Type 				| Topic Description                                                  		|
 | --------------------- | ------------------------------------- | ----------------------------------------------------------------------------- |
-| camera/command 	| anafi_ros_interfaces/CameraCommand 	| Camera zoom commands. 							|
-| drone/command 	| anafi_ros_interfaces/PilotingCommand 	| Drone piloting commands. 							|
-| drone/moveby 		| anafi_ros_interfaces/MoveByCommand 	| Move the drone by the given displacement and rotate by the given angle. 	|
-| drone/moveto 		| anafi_ros_interfaces/MoveToCommand 	| Move the drone to the specified location. 					|
-| gimbal/command 	| anafi_ros_interfaces/GimbalCommand 	| Gimbal attitude commands. 							|
+| camera/command 	| [anafi_ros_interfaces/CameraCommand](details.md#cameracommand) 	   | Camera zoom commands. |
+| drone/command 	| [anafi_ros_interfaces/PilotingCommand](details.md#pilotingcommand) | Drone piloting commands. |
+| drone/moveby 		| [anafi_ros_interfaces/MoveByCommand](details.md#movebycommand)	   | Move the drone by the given displacement and rotate by the given angle. |
+| drone/moveto 		| [anafi_ros_interfaces/MoveToCommand](details.md#movetocommand) 	   | Move the drone to the specified location. |
+| gimbal/command 	| [anafi_ros_interfaces/GimbalCommand](details.md#gimbalcommand) 	   | Gimbal attitude commands. |
 
 ## Published topics
 
@@ -43,20 +43,20 @@
 | link/quality 			| std_msgs/UInt8 				| 30 Hz 	| [0: bad, 5: good] 									| Link quality 					|
 | link/rssi 			| std_msgs/Int8 				| 30 Hz 	| [-100: bad, 0: good] 									| Signal strength (available only for ANAFI 4K, Thermal and USA) 	| dBm 	|
 | skycontroller/attitude 	| geometry_msgs/QuaternionStamped 		| 20 Hz 	| 											| SkyController's attitude in north-west-up frame 				|	|
-| skycontroller/command 	| anafi_ros_interfaces/SkycontrollerCommand 	| 100 Hz 	| 											| Command from SkyController 					|
+| skycontroller/command 	| [anafi_ros_interfaces/SkycontrollerCommand](details.md#skycontrollercommand) 	| 100 Hz 	| 											| Command from SkyController 					|
 | skycontroller/rpy 		| geometry_msgs/Vector3Stamped 			| 20 Hz 	| 											| SkyController's attitude in north-west-up frame 				| º 	| 
 | storage/available 		| std_msgs/UInt64 				| 		| 											| Available storage space 						| B 	| 
-| target/trajectory 		| anafi_ros_interfaces/TargetTrajectory 	| 		| 											| Target estimated trajectory 					|	|
+| target/trajectory 		| [anafi_ros_interfaces/TargetTrajectory](details.md#targettrajectory) 	| 		| 											| Target estimated trajectory 					|	|
 | time 				| std_msgs/Time 				| 30 Hz 	| 											| Drone's local time 						|	|
 
 ## Services
 
 | Service name 				| Service type 				| Service description 										|
 | ------------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------- |
-| camera/photo/stop 			| anafi_ros_interfaces/srv/Photo 	| stop photo capture 										|
-| camera/photo/take 			| anafi_ros_interfaces/srv/Photo 	| take a photo 											|
-| camera/recording/start	 	| anafi_ros_interfaces/srv/Recording 	| start video recording 									|
-| camera/recording/stop 		| anafi_ros_interfaces/srv/Recording 	| stop video recording 										|
+| camera/photo/stop 			| [anafi_ros_interfaces/srv/Photo](details.md#photo) 	| stop photo capture 										|
+| camera/photo/take 			| [anafi_ros_interfaces/srv/Photo](details.md#photo) 	| take a photo 											|
+| camera/recording/start	 	| [anafi_ros_interfaces/srv/Recording](details.md#recording) 	| start video recording 									|
+| camera/recording/stop 		| [anafi_ros_interfaces/srv/Recording](details.md#recording) 	| stop video recording 										|
 | camera/reset 				| std_srvs/srv/Trigger 			| reset zoom level 										|
 | drone/arm 				| std_srvs/srv/SetBool 			| {true: arm the drone, false: disarm the drone} 						|
 | drone/calibrate 			| std_srvs/srv/Trigger 			| start drone's magnetometer calibration process 						|
@@ -67,16 +67,16 @@
 | drone/rth 				| std_srvs/srv/Trigger 			| return home 											|
 | drone/takeoff 			| std_srvs/srv/Trigger 			| take-off the drone 										|
 | flightplan/pause 			| std_srvs/srv/Trigger 			| pause the flight plan 									|
-| flightplan/start 			| anafi_ros_interfaces/srv/FlightPlan 	| start the flight plan based on the Mavlink file existing on the drone 			|
+| flightplan/start 			| [anafi_ros_interfaces/srv/FlightPlan](details.md#flightplan) 	| start the flight plan based on the Mavlink file existing on the drone 			|
 | flightplan/stop 			| std_srvs/srv/Trigger 			| stop the flight plan 										|
-| flightplan/upload 			| anafi_ros_interfaces/srv/FlightPlan 	| upload the Mavlink file to the drone 								|
-| followme/start 			| anafi_ros_interfaces/srv/FollowMe 	| start follow-me 										|
+| flightplan/upload 			| [anafi_ros_interfaces/srv/FlightPlan](details.md#flightplan) 	| upload the Mavlink file to the drone 								|
+| followme/start 			| [anafi_ros_interfaces/srv/FollowMe](details.md#followme) 	| start follow-me 										|
 | followme/stop 			| std_srvs/srv/Trigger 			| stop follow-me 										|
 | gimbal/calibrate 			| std_srvs/srv/Trigger 			| start gimbal calibration 									|
 | gimbal/reset 				| std_srvs/srv/Trigger 			| reset the reference orientation of the gimbal 						|
 | home/navigate 			| std_srvs/srv/SetBool 			| {true: start return home, false: stop return home} trigger navigate home 			|
-| home/set 				| anafi_ros_interfaces/srv/Location 	| set the custom home location 									|
-| POI/start 				| anafi_ros_interfaces/srv/PilotedPOI 	| start the piloted point of interest 								|
+| home/set 				| [anafi_ros_interfaces/srv/Location](details.md#location) 	| set the custom home location 									|
+| POI/start 				| [anafi_ros_interfaces/srv/PilotedPOI](details.md#pilotedpoi) 	| start the piloted point of interest 								|
 | POI/stop 				| std_srvs/srv/Trigger 			| stop the piloted point of interest 								|
 | skycontroller/discover_drones 	| std_srvs/srv/Trigger 			| find all visible drones 									|
 | skycontroller/forget_drone 		| std_srvs/srv/Trigger 			| forget the connected drone 									|
