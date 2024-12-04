@@ -25,7 +25,7 @@ import anafi_ros_nodes
 from timeit import default_timer as timer
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy, qos_profile_system_default, qos_profile_sensor_data, qos_profile_services_default, qos_profile_parameters, qos_profile_parameter_events, qos_profile_action_status_default
+from rclpy.qos import qos_profile_system_default, qos_profile_sensor_data, qos_profile_services_default, qos_profile_parameters, qos_profile_parameter_events
 from rcl_interfaces.msg import ParameterDescriptor, FloatingPointRange, IntegerRange, SetParametersResult
 from ament_index_python.packages import get_package_share_directory
 from std_msgs.msg import UInt8, UInt16, Int8, Float32, String, Header, Bool
@@ -54,6 +54,7 @@ from olympe.enums.precise_home import mode as precise_home_mode
 from olympe.enums.mediastore import state as mediastore_state_enum
 from olympe.enums.obstacle_avoidance import mode as obstacle_avoidance_mode
 from olympe.enums.thermal import rendering_mode
+from olympe.enums.move import orientation_mode
 from anafi_ros_interfaces.msg import PilotingCommand, MoveByCommand, MoveToCommand, CameraCommand, GimbalCommand
 from anafi_ros_interfaces.srv import PilotedPOI, FlightPlan, FollowMe, Location, Photo, Recording, String as StringSRV
 from anafi_ros_nodes.event_listener_anafi import EventListenerAnafi
@@ -80,48 +81,40 @@ class Anafi(Node):
 		self.node = rclpy.create_node('anafi')
 
 		self.node.get_logger().info("Anafi is running...")
-		
-		# Configure QoS profile for publishing and subscribing
-		qos_profile = QoSProfile(  # https://docs.ros.org/en/rolling/Concepts/Intermediate/About-Quality-of-Service-Settings.html#qos-policies
-			reliability=ReliabilityPolicy.RELIABLE,
-			durability=DurabilityPolicy.VOLATILE,
-			history=HistoryPolicy.KEEP_LAST,
-			depth=1
-		)
 
 		# Subscribers
-		self.node.create_subscription(CameraCommand, 'camera/command', self.zoom_callback, qos_profile_services_default)
-		self.node.create_subscription(PilotingCommand, 'drone/command', self.rpyt_callback, qos_profile_services_default)
-		self.node.create_subscription(MoveToCommand, 'drone/moveto', self.moveTo_callback, qos_profile_services_default)
-		self.node.create_subscription(MoveByCommand, 'drone/moveby', self.moveBy_callback, qos_profile_services_default)
-		self.node.create_subscription(GimbalCommand, 'gimbal/command', self.gimbal_callback, qos_profile_services_default)
+		self.node.create_subscription(CameraCommand, 'camera/command', self.zoom_callback, qos_profile_system_default)
+		self.node.create_subscription(PilotingCommand, 'drone/command', self.rpyt_callback, qos_profile_system_default)
+		self.node.create_subscription(MoveToCommand, 'drone/moveto', self.moveTo_callback, qos_profile_system_default)
+		self.node.create_subscription(MoveByCommand, 'drone/moveby', self.moveBy_callback, qos_profile_system_default)
+		self.node.create_subscription(GimbalCommand, 'gimbal/command', self.gimbal_callback, qos_profile_system_default)
 
 		# Publishers
-		self.pub_image = self.node.create_publisher(Image, 'camera/image', qos_profile)
-		self.pub_camera_info = self.node.create_publisher(CameraInfo, 'camera/camera_info', qos_profile)
-		self.pub_time = self.node.create_publisher(Time, 'time', qos_profile)
+		self.pub_image = self.node.create_publisher(Image, 'camera/image', qos_profile_sensor_data)
+		self.pub_camera_info = self.node.create_publisher(CameraInfo, 'camera/camera_info', qos_profile_system_default)
+		self.pub_time = self.node.create_publisher(Time, 'time', qos_profile_system_default)
 		self.pub_attitude = self.node.create_publisher(QuaternionStamped, 'drone/attitude', qos_profile_sensor_data)
 		self.pub_altitude = self.node.create_publisher(Float32, 'drone/altitude', qos_profile_sensor_data)
-		self.pub_position = self.node.create_publisher(PointStamped, 'drone/position', qos_profile)
-		self.pub_local_position = self.node.create_publisher(PointStamped, 'drone/position_local', qos_profile)
+		self.pub_position = self.node.create_publisher(PointStamped, 'drone/position', qos_profile_system_default)
+		self.pub_local_position = self.node.create_publisher(PointStamped, 'drone/position_local', qos_profile_system_default)
 		self.pub_speed = self.node.create_publisher(Vector3Stamped, 'drone/speed', qos_profile_sensor_data)
-		self.pub_link_goodput = self.node.create_publisher(UInt16, 'link/goodput', qos_profile)
-		self.pub_link_quality = self.node.create_publisher(UInt8, 'link/quality', qos_profile)
-		self.pub_wifi_rssi = self.node.create_publisher(Int8, 'link/rssi', qos_profile)
-		self.pub_battery_percentage = self.node.create_publisher(UInt8, 'battery/percentage', qos_profile)
-		self.pub_state = self.node.create_publisher(String, 'drone/state', qos_profile)
+		self.pub_link_goodput = self.node.create_publisher(UInt16, 'link/goodput', qos_profile_system_default)
+		self.pub_link_quality = self.node.create_publisher(UInt8, 'link/quality', qos_profile_system_default)
+		self.pub_wifi_rssi = self.node.create_publisher(Int8, 'link/rssi', qos_profile_system_default)
+		self.pub_battery_percentage = self.node.create_publisher(UInt8, 'battery/percentage', qos_profile_system_default)
+		self.pub_state = self.node.create_publisher(String, 'drone/state', qos_profile_system_default)
 		self.pub_rpy = self.node.create_publisher(Vector3Stamped, 'drone/rpy', qos_profile_sensor_data)
 		self.pub_gimbal_attitude = self.node.create_publisher(QuaternionStamped, 'gimbal/attitude', qos_profile_sensor_data)
 		self.pub_gimbal_rpy = self.node.create_publisher(Vector3Stamped, 'gimbal/rpy', qos_profile_sensor_data)
-		self.pub_exposure_time = self.node.create_publisher(Float32, 'camera/exposure_time', qos_profile)
-		self.pub_iso_gain = self.node.create_publisher(UInt16, 'camera/iso_gain', qos_profile)
-		self.pub_awb_r_gain = self.node.create_publisher(Float32, 'camera/awb_r_gain', qos_profile)
-		self.pub_awb_b_gain = self.node.create_publisher(Float32, 'camera/awb_b_gain', qos_profile)
-		self.pub_hfov = self.node.create_publisher(Float32, 'camera/hfov', qos_profile)
-		self.pub_vfov = self.node.create_publisher(Float32, 'camera/vfov', qos_profile)
-		self.pub_gps_fix = self.node.create_publisher(Bool, 'drone/gps/fix', qos_profile)
+		self.pub_exposure_time = self.node.create_publisher(Float32, 'camera/exposure_time', qos_profile_system_default)
+		self.pub_iso_gain = self.node.create_publisher(UInt16, 'camera/iso_gain', qos_profile_system_default)
+		self.pub_awb_r_gain = self.node.create_publisher(Float32, 'camera/awb_r_gain', qos_profile_system_default)
+		self.pub_awb_b_gain = self.node.create_publisher(Float32, 'camera/awb_b_gain', qos_profile_system_default)
+		self.pub_hfov = self.node.create_publisher(Float32, 'camera/hfov', qos_profile_system_default)
+		self.pub_vfov = self.node.create_publisher(Float32, 'camera/vfov', qos_profile_system_default)
+		self.pub_gps_fix = self.node.create_publisher(Bool, 'drone/gps/fix', qos_profile_system_default)
 		self.pub_steady = self.node.create_publisher(Bool, 'drone/steady', qos_profile_sensor_data)
-		self.pub_battery_health = self.node.create_publisher(UInt8, 'battery/health', qos_profile)
+		self.pub_battery_health = self.node.create_publisher(UInt8, 'battery/health', qos_profile_system_default)
 
 		# Services
 		self.node.create_service(SetBool, 'drone/arm', self.arm_callback)
@@ -309,15 +302,7 @@ class Anafi(Node):
 																								 to_value=180.0,
 																								 step=0.0)]))
 		if self.model in {'thermal', 'usa'}:
-			if self.model=='thermal':
-				self.node.declare_parameter("camera/thermal/rendering", 2,  # 0
-										ParameterDescriptor(
-											description="Thermal image rendering mode: 0 = visible; 1 = thermal; 2: blended",
-											integer_range=[IntegerRange(from_value=0,
-																		to_value=2,
-																		step=1)]))
-			if self.model=='usa':
-				self.node.declare_parameter("camera/thermal/rendering", 0,  # 0
+			self.node.declare_parameter("camera/thermal/rendering", 0,  # 0
 										ParameterDescriptor(
 											description="Thermal image rendering mode: 0 = visible; 1 = thermal; 2: blended",
 											integer_range=[IntegerRange(from_value=0,
@@ -580,6 +565,14 @@ class Anafi(Node):
 				camera_operated = parameter.value
 				self.drone(set_style(style=style(int(camera_operated))))  # https://developer.parrot.com/docs/olympe/arsdkng_piloting_style.html#olympe.messages.piloting_style.set_style
 				self.node.get_logger().debug("Parameter 'drone/camera_operated' set to %r" % camera_operated)
+			if parameter.name == 'drone/offboard':
+				offboard = parameter.value
+				if offboard:
+					self.switch_offboard()
+				else:
+					self.switch_manual()
+					if not self.skycontroller_enabled:
+						return SetParametersResult(successful=False, reason="Cannot swith to manual control without Skycontroller!")
 				
 			# RTH related
 			if parameter.name == 'home/type':
@@ -905,7 +898,7 @@ class Anafi(Node):
 					olympe.VDEF_NV12: cv2.COLOR_YUV2BGR_NV12,
 				}[yuv_frame.format()]
 				cv2frame = cv2.cvtColor(yuv_frame.as_ndarray(), cv2_cvt_color_flag)  # use OpenCV to convert the yuv frame to RGB
-				if self.model in {'thermal', 'usa'} and (self.thermal_rendering == 1):
+				if self.model in {'thermal', 'usa'} and self.thermal_rendering == 1:
 					cv2frame = cv2.applyColorMap(cv2frame, cv2.COLORMAP_PLASMA)  # to mimic FLIR ironbow colormap
 				# if self.model in {'ai'} and self.disparity_map:
 				# 	mask = cv2.inRange(cv2frame, np.array([0,0,0]), np.array([254,254,254]))
@@ -972,6 +965,7 @@ class Anafi(Node):
 		self.drone(olympe.messages.follow_me.stop())
 		self.drone(olympe.messages.rth.abort())
 		self.node.get_logger().warning("HALT!!!")
+		response.success = True
 		return response
 		
 	def navigate_home_callback(self, request, response):
@@ -985,6 +979,7 @@ class Anafi(Node):
 		else:
 			self.node.get_logger().info("Stopping Navigation Home")		
 			self.drone(NavigateHome(start=0)).wait()  # https://developer.parrot.com/docs/olympe/arsdkng_ardrone3_piloting.html#olympe.messages.ardrone3.Piloting.NavigateHome
+		time.sleep(1.0)
 		navigate_home_state = self.drone.get_state(olympe.messages.ardrone3.PilotingState.NavigateHomeStateChanged)  # https://developer.parrot.com/docs/olympe/arsdkng_ardrone3_piloting.html#olympe.messages.ardrone3.PilotingState.NavigateHomeStateChanged
 		self.node.get_logger().info("Navigate Home State: state = %s, reason = %s" % (navigate_home_state['state'].name, navigate_home_state['reason'].name))
 		return response
@@ -996,6 +991,7 @@ class Anafi(Node):
 			FlyingStateChanged(state="hovering")
 		).wait()
 		self.drone(return_to_home()).wait()  # https://developer.parrot.com/docs/olympe/arsdkng_rth.html#olympe.messages.rth.return_to_home
+		response.success = True
 		return response
 		
 	def set_home_callback(self, request, response):
@@ -1005,6 +1001,7 @@ class Anafi(Node):
 			longitude=request.longitude,  # longitude of the takeoff location
 			altitude=request.altitude  # altitude of the custom location above takeoff (ATO).
 		)).wait()
+		self.node.get_logger().info("Setting Home finished")
 		return response
 		
 	def start_piloted_POI_callback(self, request, response):
@@ -1024,6 +1021,8 @@ class Anafi(Node):
 	def stop_piloted_POI_callback(self, request, response):
 		self.node.get_logger().info("Stopping Piloted Point of Interest")		
 		self.drone(StopPilotedPOI()).wait()  # https://developer.parrot.com/docs/olympe/arsdkng_ardrone3_piloting.html#olympe.messages.ardrone3.Piloting.StopPilotedPOI
+		piloted_poi_state = self.drone.get_state(olympe.messages.ardrone3.PilotingState.PilotedPOIV2) # https://developer.parrot.com/docs/olympe/arsdkng_ardrone3_piloting.html#olympe.messages.ardrone3.PilotingState.PilotedPOIV2
+		response.message = piloted_poi_state['status'].name
 		return response
 			
 	def flightplan_upload_callback(self, request, response): # https://forum.developer.parrot.com/t/olympe-mavlink-working-example/14041/2
@@ -1071,7 +1070,8 @@ class Anafi(Node):
 		
 	def followme_start_callback(self, request, response):
 		self.node.get_logger().warning("FollowMe starting with " + olympe.enums.follow_me.mode(request.mode).name)
-		self.node.get_logger().info("Target is controller: %r" % self.drone.get_state(olympe.messages.follow_me.target_is_controller)['state'] == 1) # https://developer.parrot.com/docs/olympe/arsdkng_followme.html#olympe.messages.follow_me.target_is_controller
+		is_controller = self.drone.get_state(olympe.messages.follow_me.target_is_controller)['state'] == 1
+		self.node.get_logger().info("Target is controller: %r" % is_controller) # https://developer.parrot.com/docs/olympe/arsdkng_followme.html#olympe.messages.follow_me.target_is_controller
 		self.drone(olympe.messages.follow_me.target_framing_position( # https://developer.parrot.com/docs/olympe/arsdkng_followme.html#olympe.messages.follow_me.target_framing_position
 			horizontal=request.horizontal,
 			vertical=request.vertical
@@ -1081,7 +1081,8 @@ class Anafi(Node):
 			target_elevation=request.target_elevation,
 			change_of_scale=request.change_of_scale,
 			confidence_index=request.confidence_index,
-			is_new_selection=request.is_new_selection
+			is_new_selection=request.is_new_selection,
+			timestamp=1000  # TODO change fixed value
 			)).wait()
 		self.drone(olympe.messages.follow_me.start( # https://developer.parrot.com/docs/olympe/arsdkng_followme.html#olympe.messages.follow_me.start
 			mode=olympe.enums.follow_me.mode(request.mode) # https://developer.parrot.com/docs/olympe/arsdkng_followme.html#olympe.enums.follow_me.mode
@@ -1120,10 +1121,19 @@ class Anafi(Node):
 											   (('completed' if state['xAxisCalibration'] else 'failed'),
 												('completed' if state['yAxisCalibration'] else 'failed'),
 												('completed' if state['zAxisCalibration'] else 'failed')))
+				response.message = ("Calibration status: x-axis - %s, y-axis - %s, z-axis - %s" %
+											   (('completed' if state['xAxisCalibration'] else 'failed'),
+												('completed' if state['yAxisCalibration'] else 'failed'),
+												('completed' if state['zAxisCalibration'] else 'failed')))
+				response.success = False
 				self.node.get_logger().fatal("Calibration failed")
 			else:
+				response.success = True
+				response.message = "Calibration completed"
 				self.node.get_logger().info("Calibration completed")
 		else:
+			response.success = True
+			response.message = "Magnetometer calibration is not required"
 			self.node.get_logger().info("Magnetometer calibration is not required")
 		return response
 		
@@ -1136,7 +1146,7 @@ class Anafi(Node):
 		return response
 		
 	def reset_zoom_callback(self, request, response):
-		self.node.get_logger().debug("Reseting zoom")
+		self.node.get_logger().debug("Resetting zoom")
 		self.drone(camera.reset_zoom(cam_id=0)).wait() # https://developer.parrot.com/docs/olympe/arsdkng_camera.html#olympe.messages.camera.reset_zoom
 		return response
 		
@@ -1282,7 +1292,8 @@ class Anafi(Node):
 			gaz=int(bound_percentage(msg.gaz/self.max_vertical_speed*100)),  # vertical speed [-100, 100] (% of max vertical speed)
 			timestampAndSeqNum=0))
 
-	def moveBy_callback(self, msg):		
+	def moveBy_callback(self, msg):
+		self.node.get_logger().info(f"moved by: {msg.dx} | {msg.dy} | {msg.dz}")
 		self.drone(move.extended_move_by( # https://developer.parrot.com/docs/olympe/arsdkng_move.html?#olympe.messages.move.extended_move_by
 			d_x=msg.dx, # displacement along the front axis (m)
 			d_y=msg.dy, # displacement along the right axis (m)
@@ -1298,7 +1309,7 @@ class Anafi(Node):
 			latitude=msg.latitude, # latitude (degrees)
 			longitude=msg.longitude, # longitude (degrees)
 			altitude=msg.altitude, # altitude (m)
-			orientation_mode=olympe.enums.move.orientation_mode(msg.orientation_mode), # https://developer.parrot.com/docs/olympe/arsdkng_move.html#olympe.enums.move.orientation_mode
+			orientation_mode=orientation_mode(int(msg.orientation_mode)), # https://developer.parrot.com/docs/olympe/arsdkng_move.html#olympe.enums.move.orientation_mode
 			heading=msg.heading, # heading relative to the North (degrees)
 			max_horizontal_speed=self.max_horizontal_speed,
 			max_vertical_speed=self.max_vertical_speed,
@@ -1306,6 +1317,7 @@ class Anafi(Node):
 		)).wait()
 
 	def zoom_callback(self, msg):
+		self.node.get_logger().info(f"Setting zoom with mode: {msg.mode}, zoom: {msg.zoom}")
 		self.drone(camera.set_zoom_target(  # https://developer.parrot.com/docs/olympe/arsdkng_camera.html#olympe.messages.camera.set_zoom_target
 			cam_id=0,
 			control_mode=olympe.enums.camera.zoom_control_mode(msg.mode),  # https://developer.parrot.com/docs/olympe/arsdkng_camera.html#olympe.enums.camera.zoom_control_mode
@@ -1328,6 +1340,7 @@ class Anafi(Node):
 				# button: 0 = return home, 1 = takeoff/land, 2 = back left, 3 = back right
 				self.drone(mapper.grab(buttons=(0<<0|0<<1|0<<2|1<<3), axes=0)).wait()  # https://developer.parrot.com/docs/olympe/arsdkng_mapper.html#olympe.messages.mapper.grab
 				self.drone(setPilotingSource(source="SkyController")).wait()  # https://developer.parrot.com/docs/olympe/arsdkng_skyctrl_copiloting.html#olympe.messages.skyctrl.CoPiloting.setPilotingSource
+				print("setting param offboard to false")
 				self.node.set_parameters([Parameter('drone/offboard', rclpy.Parameter.Type.BOOL, False)])
 				self.node.get_logger().warning("Control: Manual")
 				self.offboard = False
